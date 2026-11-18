@@ -1,0 +1,18 @@
+{
+  "verdict": {
+    "decision": "Release",
+    "n_errors": 0,
+    "n_warn_images": 16,
+    "n_images": 203,
+    "warn_ratio": 0.0788,
+    "reasons": [
+      "Đạt chuẩn phát hành: 0 lỗi bắt buộc, tỉ lệ cảnh báo 0.0788 (16/203) < ngưỡng 0.1000."
+    ]
+  },
+  "reviewed": 80,
+  "budget": 80,
+  "seconds": 9.7,
+  "exported": "D:\\VinAI\\Day9\\K5-L2B-Day09-PhamVanNgocVinh-03262-AutoQC-Pipeline-Lab\\submission\\export\\clean_v1",
+  "config_sha1": "65487dd4c16c31e2148fbec48a0ba4c76d20338d",
+  "review_sim_sha1": "7988ca22827f780a7043a2300490e679a1697154"
+}
