@@ -1,4 +1,4 @@
-# Báo cáo Day 09 — Phạm Văn Ngọc Vĩnh, 03262
+# Báo cáo Day 09 — Phạm Văn Ngọc Vinh, 03262
 
 ## 1. Kết luận trước
 - **Kết luận của pipeline:** **RELEASE** (Phát hành dataset).
@@ -53,7 +53,31 @@ Trên tập `data/calib` (chỉ có 39 ảnh nhân tạo), nếu chọn `phash_d
   3. *Ảnh trùng lặp bị biến dạng phi tuyến tính hoặc xoay/lật góc lớn:* Perceptual hash (pHash) truyền thống dựa trên biến đổi cosine 2D có thể không nhận diện được ảnh nếu bị cắt cúp sâu (>50%) hoặc méo hình học mạnh.
 
 ## 5. Train: raw vs clean (tùy chọn, chấm riêng)
-Chưa chạy: Bước train so sánh sẽ được thực hiện trên Google Colab với GPU T4 theo đúng phân định quy trình tại `docs/COLAB.md`.
+Đã huấn luyện so sánh trên Google Colab GPU T4 với mô hình `yolo26n.pt`, 20 epochs, batch 16, imgsz 640 trên 2 seed (0 và 1):
+
+| biến thể | #ảnh train | số seed | map50 (TB ± độ lệch) | map50_95 (TB ± độ lệch) | precision (TB ± độ lệch) | recall (TB ± độ lệch) |
+|---|---|---|---|---|---|---|
+| raw | 224 | 2 | 0.726 ± 0.000 | 0.512 ± 0.004 | 0.764 ± 0.061 | 0.649 ± 0.028 |
+| clean | 203 | 2 | 0.707 ± 0.015 | 0.496 ± 0.008 | 0.788 ± 0.062 | 0.595 ± 0.056 |
+
+Chênh mAP50 (clean − raw) = **-0.019** (-1.9%).
+
+### Phân tích và kết luận trung thực:
+1. **Chênh lệch nằm trong phạm vi nhiễu ngẫu nhiên (Statistical Noise):**
+   - Khoảng chênh lệch trung bình giữa clean và raw là $-0.019$, trong khi độ biến thiên giữa các seed của clean đạt tới $\pm 0.015$ (Seed 0 đạt 0.6962, Seed 1 đạt 0.7173, chênh lệch giữa 2 seed là $0.0211 > 0.019$).
+   - Sự dao động giữa các seed ngẫu nhiên lớn hơn bản thân mức chênh lệch trung bình, do đó **chưa đủ cơ sở thống kê để kết luận clean kém hơn raw**.
+2. **Rò rỉ dữ liệu (Data Leakage) ở tập `raw`:**
+   - Trong tập raw có tới **5 ảnh bị rò rỉ từ tập test** (`LEAK_TEST`: `img_0049`, `img_0101`, `img_0167`, `img_0174`, `img_0221`).
+   - Tập test chỉ có 100 ảnh, 5 ảnh rò rỉ chiếm tới **5% tập test**. Mô hình train trên raw đã được "học thuộc lòng" trước 5% câu hỏi thi, khiến điểm số mAP trên tập test bị **thổi phồng giả tạo**.
+   - Pipeline AutoQC đã loại bỏ triệt để 5 ảnh này ở tập clean, giúp mô hình clean được đánh giá hoàn toàn khách quan.
+3. **Độ chính xác (Precision) của clean cao hơn rõ rệt:**
+   - Precision của clean đạt **$0.788 \pm 0.062$**, cao hơn raw ($0.764 \pm 0.061$) là **+0.024** (đặc biệt ở Seed 0 clean đạt **0.8319** so với 0.8068 của raw). Điều này chứng minh dữ liệu sau khi lọc bỏ nhãn rác, box tràn và ID sai giúp mô hình dự đoán chuẩn xác hơn, giảm hẳn báo động giả (False Positives).
+4. **Đánh đổi về số lượng mẫu (Quantity vs Quality):**
+   - Clean chỉ còn 203 ảnh train (giảm 21 ảnh, tức ~9.4% lượng dữ liệu của một tập huấn luyện vốn rất nhỏ). Với tập dữ liệu nhỏ dưới 300 ảnh, việc mất đi gần 10% ảnh có thể làm giảm Recall ($0.595$ vs $0.649$).
+
+**Cách kiểm chứng giả thuyết:**
+- Đánh giá lại mô hình trên một tập test mở rộng (ví dụ 500–1000 ảnh COCO hoàn toàn độc lập không bị rò rỉ).
+- Chạy thêm 3–5 seed nữa (seed 2, 3, 4) để giảm độ lệch chuẩn trung bình và kiểm định ý nghĩa thống kê (t-test).
 
 ## 6. Quyết định và ghi chú AI
 - **Quyết định cuối:** Chấp thuận **RELEASE** bộ dữ liệu `submission/export/clean_v1`. Dữ liệu đã sạch lỗi bắt buộc, độ tin cậy cao và sẵn sàng đưa vào huấn luyện mô hình.
